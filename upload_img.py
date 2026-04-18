@@ -140,6 +140,8 @@ class FruitClassifierApp:
             else:
                 self.result_label.config(text=f"Kết quả: {label}", fg="red")
 
+            self.detail_label.config(text=confidence_text)
+
             # self.detail_label.config(
             #     text=(
             #         f"Đặc trưng trích xuất:\n"
