@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hệ Thống Phân Loại Trái Cây</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>🍎 AI FRUIT INSPECTOR</h1>
+      <p>Hệ thống nhận diện trái cây Tươi / Hư tự động</p>
+    </header>
+
+    <div class="container">
+      <aside class="sidebar">
+        <h3>BẢNG ĐIỀU KHIỂN</h3>
+        <button class="menu-btn active" onclick="switchTab('upload-tab')">
+          📁 Tải ảnh từ thư mục
+        </button>
+        <button class="menu-btn" onclick="switchTab('webcam-tab')">
+          📸 Quét bằng Webcam
+        </button>
+      </aside>
+
+      <main class="main-content">
+        <div id="upload-tab" class="tab-content active">
+          <h2>Tải ảnh từ máy tính</h2>
+          <div class="upload-box">
+            <form id="uploadForm" enctype="multipart/form-data">
+              <input
+                type="file"
+                id="imageInput"
+                name="image"
+                accept="image/*"
+                required
+              />
+              <button type="button" onclick="uploadImage()">
+                Phân Tích Bằng AI
+              </button>
+            </form>
+          </div>
+          <div class="result-box">
+            <img
+              id="previewImage"
+              style="display: none; max-width: 300px; margin-top: 15px"
+            />
+            <h3 id="resultText">Kết quả: Đang chờ...</h3>
+          </div>
+        </div>
+
+        <div id="webcam-tab" class="tab-content" style="display: none">
+          <h2>Quét trực tiếp qua Webcam</h2>
+          <p>
+            Đưa trái cây vào khung hình. AI sẽ tự động phân tích (Real-time).
+          </p>
+          <div class="webcam-box">
+            <img
+              id="videoStream"
+              src=""
+              alt="Webcam chưa bật"
+              width="600"
+              style="border: 3px solid #333"
+            />
+          </div>
+          <button class="action-btn" onclick="startWebcam()">
+            Bật / Tắt Webcam
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <footer>
+      <p>
+        © 2026 - Đồ án Hệ thống Trí tuệ Nhân tạo Nhóm 3. Phát triển với mô hình
+        Hybrid (MobileNetV2 + Random Forest).
+      </p>
+    </footer>
+
+    <script>
+      // Hàm chuyển đổi giữa 2 nút ở Sidebar
+      function switchTab(tabId) {
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((tab) => (tab.style.display = "none"));
+        document.getElementById(tabId).style.display = "block";
+
+        document
+          .querySelectorAll(".menu-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        event.target.classList.add("active");
+      }
+
+      // Gửi ảnh lên server Python
+      function uploadImage() {
+        let formData = new FormData();
+        let fileInput = document.getElementById("imageInput").files[0];
+        if (!fileInput) return alert("Vui lòng chọn ảnh!");
+
+        formData.append("image", fileInput);
+
+        // Hiện ảnh preview
+        let reader = new FileReader();
+        reader.onload = function (e) {
+          document.getElementById("previewImage").src = e.target.result;
+          document.getElementById("previewImage").style.display = "block";
+        };
+        reader.readAsDataURL(fileInput);
+
+        document.getElementById("resultText").innerHTML =
+          "⏳ Đang phân tích...";
+
+        // Gọi API Python
+        fetch("/predict_image", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            let color = data.result.includes("TƯƠI") ? "green" : "red";
+            document.getElementById("resultText").innerHTML =
+              `<span style="color:${color}">${data.result}</span>`;
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      // Bật Video Stream
+      let webcamOn = false;
+      function startWebcam() {
+        let imgTag = document.getElementById("videoStream");
+        if (!webcamOn) {
+          imgTag.src = "/video_feed"; // Gọi API phát video của Python
+          webcamOn = true;
+        } else {
+          imgTag.src = "";
+          webcamOn = false;
+        }
+      }
+    </script>
+  </body>
+</html>
