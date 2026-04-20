@@ -7,54 +7,59 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import GridSearchCV
 from trich_xuat import extract_features  
 
-def load_data_and_extract(thumuc_goc="dataset"):
+def load_data_and_extract(thumuc_goc):
     X = []
     y = []
     
     if not os.path.exists(thumuc_goc):
-        print(f"❌ LỖI: Không tìm thấy thư mục '{thumuc_goc}'. Hãy đổi tên thư mục ảnh của bạn thành 'dataset' và để ngang hàng với file code.")
+        print(f"❌ LỖI: Không tìm thấy thư mục '{thumuc_goc}'.")
         return np.array([]), np.array([])
 
     print("🔍 Đang lùng sục dữ liệu trong thư mục...")
-    # Lặp qua từng thư mục trái cây (Apple, Banana, Strawberry...)
-    for fruit_folder in os.listdir(thumuc_goc):
-        fruit_path = os.path.join(thumuc_goc, fruit_folder)
-        if not os.path.isdir(fruit_path):
+    
+    # Lặp qua các thư mục con bên trong (VD: freshapples, rottenbanana...)
+    for folder_name in os.listdir(thumuc_goc):
+        folder_path = os.path.join(thumuc_goc, folder_name)
+        if not os.path.isdir(folder_path):
             continue
             
-        print(f"\n🍎 Đang xử lý: {fruit_folder}...")
+        # Xác định nhãn (Label) dựa vào tên thư mục
+        folder_name_lower = folder_name.lower()
+        if "fresh" in folder_name_lower:
+            label = 0
+            label_name = "Tươi"
+        elif "rotten" in folder_name_lower:
+            label = 1
+            label_name = "Hư"
+        else:
+            continue # Nếu có thư mục lạ không chứa chữ fresh/rotten thì bỏ qua
+            
+        print(f"\n🍎 Đang xử lý: {folder_name} (Nhãn: {label_name})...")
         
-        # Lặp qua 2 thư mục Fresh và Rotten bên trong
-        for condition in ["Fresh", "Rotten"]:
-            condition_path = os.path.join(fruit_path, condition)
-            if not os.path.exists(condition_path):
-                continue
-                
-            # Gán nhãn: Fresh = 0 (Tươi), Rotten = 1 (Hư)
-            label = 0 if condition == "Fresh" else 1
-            label_name = "Tươi" if label == 0 else "Hư"
+        # Đọc từng ảnh và đưa qua CNN
+        dem_anh = 0
+        for img_name in os.listdir(folder_path):
+            img_path = os.path.join(folder_path, img_name)
+            img = cv2.imread(img_path)
             
-            print(f"  👉 Trích xuất ảnh {label_name}...")
-            
-            # Đọc từng ảnh và đưa qua CNN
-            dem_anh = 0
-            for img_name in os.listdir(condition_path):
-                img_path = os.path.join(condition_path, img_name)
-                img = cv2.imread(img_path)
-                
-                if img is not None:
-                    features = extract_features(img)
-                    if features is not None:
-                        X.append(features)
-                        y.append(label)
-                        dem_anh += 1
-            print(f"     Đã xong {dem_anh} ảnh.")
+            if img is not None:
+                features = extract_features(img)
+                if features is not None:
+                    X.append(features)
+                    y.append(label)
+                    dem_anh += 1
+        print(f"    Đã xong {dem_anh} ảnh.")
             
     return np.array(X), np.array(y)
 
 # ================= KỊCH BẢN CHÍNH =================
 print("--- BẮT ĐẦU QUÁ TRÌNH HỌC ---")
-X, y = load_data_and_extract("dataset/Fruit Freshness Dataset")
+
+# CHÚ Ý: Đường dẫn lúc này sẽ trỏ thẳng vào thư mục 'train'
+# Theo ảnh của bạn, nó lồng 2 lần thư mục dataset
+thu_muc_train = "dataset/dataset/train" 
+
+X, y = load_data_and_extract(thu_muc_train)
 
 if len(X) == 0:
     print("\n❌ Lỗi: Không có dữ liệu để học. Code đã dừng.")
@@ -65,15 +70,13 @@ else:
     # 1. Định nghĩa các "ứng cử viên" muốn máy tính chạy thử
     param_grid = {
         'n_estimators': [50, 100, 200],  # Số lượng cây: Thử ít, vừa, và nhiều
-        'max_depth': [10, 20, None]      # Độ sâu của cây: Ngắn, dài, và không giới hạn
+        'max_depth': [10, 20, None]      # Độ sâu của cây: Ngắn, dài, và không giới hạn 
     }
     
     # 2. Tạo mô hình cơ sở
     rf_base = RandomForestClassifier(random_state=42, n_jobs=-1)
     
     # 3. Thiết lập bộ quét GridSearch
-    # cv=3: Chia dữ liệu làm 3 phần để test chéo (Cross-Validation) giúp đánh giá khách quan
-    # verbose=2: In quá trình chạy ra màn hình để bạn đỡ sốt ruột
     grid_search = GridSearchCV(estimator=rf_base, param_grid=param_grid, 
                                cv=3, scoring='accuracy', verbose=2)
     
