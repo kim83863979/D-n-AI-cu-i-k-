@@ -7,12 +7,11 @@ import numpy as np
 
 from trich_xuat import extract_features
 
-MODEL_PATH = "random_forest.pkl"   # hoặc "model.pkl" nếu bạn lưu theo tên này
+MODEL_PATH = "random_forest.pkl" 
 
 
 def convert_prediction_to_label(pred):
     """
-    Chuyển output của model thành nhãn hiển thị.
     Hỗ trợ cả trường hợp model trả về số (0/1) hoặc chuỗi.
     """
     # Nếu model trả về kiểu số
@@ -141,18 +140,6 @@ class FruitClassifierApp:
                 self.result_label.config(text=f"Kết quả: {label}", fg="red")
 
             self.detail_label.config(text=confidence_text)
-
-            # self.detail_label.config(
-            #     text=(
-            #         f"Đặc trưng trích xuất:\n"
-            #         f"H_mean = {features[0]:.4f}\n"
-            #         f"S_mean = {features[1]:.4f}\n"
-            #         f"V_mean = {features[2]:.4f}\n"
-            #         f"Edge_density = {features[3]:.4f}\n"
-            #         f"Texture_score = {features[4]:.4f}\n"
-            #         f"{confidence_text}"
-            #     )
-            # )
 
         except Exception as e:
             messagebox.showerror("Lỗi dự đoán", f"Dự đoán thất bại.\n\nChi tiết: {e}")
