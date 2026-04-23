@@ -28,19 +28,16 @@ def predict_image():
     
     file = request.files['image']
     
-    # Đọc ảnh từ dữ liệu web thành format của OpenCV
     npimg = np.fromfile(file, np.uint8)
     img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
     
     if img is None:
         return jsonify({"result": "Ảnh lỗi"})
 
-    # Trích xuất 1280 đặc trưng
     features = extract_features(img)
     if features is None:
         return jsonify({"result": "Lỗi trích xuất CNN"})
         
-    # Phân loại bằng Random Forest
     result = model.predict([features])[0]
     proba = model.predict_proba([features])[0]
     
